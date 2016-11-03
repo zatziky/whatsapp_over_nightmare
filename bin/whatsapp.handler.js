@@ -2,18 +2,22 @@ const Nightmare = require('nightmare');
 const realMouse = require('nightmare-real-mouse');
 const async = require('async');
 const debug = require('debug')('nightmare:actions');
+const assert = require('assert');
 
 
 const USER_MATOUS = 'Matous Kucera';
 
-class WhatsappHandler {
+class WhatsappAccount {
 
-    constructor() {
-        this.nightmare = initNightmare();
+    constructor(account) {
+        assert(account, '"account" must be specified. It was ' + account);
+
+        this.nightmare = initNightmare(account);
+
 
         this.nightmare
             .goto('https://web.whatsapp.com/')
-            .inject('js', 'node_modules/jquery/dist/jquery.min.js')
+            .inject('js', '../node_modules/jquery/dist/jquery.min.js')
             .wait('.input-search')
             .then(() => {
                 console.log('then() needed to execute queued tasks');
@@ -50,7 +54,9 @@ class WhatsappHandler {
         // })
     }
 
-    selectUser(name) { // TODO specify the correct name in a better way
+    selectUser(name, cb) { // TODO specify the correct name in a better way
+        console.log('WhatsApp - select user', name);
+
         this.nightmare
             .insert('.input-search', name)
             .wait(`.chat-title span[title="${name}"]`)
@@ -61,16 +67,20 @@ class WhatsappHandler {
                 return $('.input-search').val()
             })
             .then((input) => {
-                console.log('Selected user', input)
-            });
+                cb(null, 'Selected user: ' + input);
+            })
+            .catch(cb);
 
     }
 
-    sendMessageText(nightmare, message) {
+    sendMessageText(message, cb) {
+        console.log('WhatsApp - sendMessage', message);
         const selectorSendButton = '#main button.icon-send.send-container';
-        return nightmare
-            .insert('#main > footer > div.block-compose > div.input-container', message)
+        return this.nightmare
+            .insert('div.input-container', message.payload)
             .realClick(selectorSendButton)
+            .then(() => cb(null, `Sent Message "${message.payload}"`))
+            .catch(cb)
     }
 
     webhookMessageReceived(nightmare, name) {
@@ -88,7 +98,7 @@ class WhatsappHandler {
 
 }
 
-function initNightmare() {
+function initNightmare(account) {
     realMouse(Nightmare);
 
     Nightmare.action('evaluateSpa', function (selector, done) {
@@ -105,7 +115,10 @@ function initNightmare() {
 
     return Nightmare({
         show: true,
+        paths: {
+            userData: `C:\\DEV\\whatsapp_over_nightmare\\electron_browser\\${account}`
+        }
     });
 }
 
-module.exports = new WhatsappHandler();
+module.exports = new WhatsappAccount('a');
