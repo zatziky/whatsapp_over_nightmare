@@ -10,19 +10,19 @@ const USER_MATOUS = 'Matous Kucera';
 class WhatsappAccount {
 
     constructor(account) {
-        assert(account, '"account" must be specified. It was ' + account);
+        assert(account, '"account" must be specified. It\'s value is ' + account + '.');
 
         this.nightmare = initNightmare(account);
 
-
         this.nightmare
             .goto('https://web.whatsapp.com/')
-            .inject('js', '../node_modules/jquery/dist/jquery.min.js')
+            .inject('js', 'node_modules/jquery/dist/jquery.min.js')
             .wait('.input-search')
             .then(() => {
                 console.log('then() needed to execute queued tasks');
-
             })
+
+
     }
 
     nightmare2() {
@@ -67,6 +67,7 @@ class WhatsappAccount {
                 return $('.input-search').val()
             })
             .then((input) => {
+                this.runDetectorActiveUserReceivedMessage(name);
                 cb(null, 'Selected user: ' + input);
             })
             .catch(cb);
@@ -81,6 +82,68 @@ class WhatsappAccount {
             .realClick(selectorSendButton)
             .then(() => cb(null, `Sent Message "${message.payload}"`))
             .catch(cb)
+    }
+
+    runDetectorActiveUserReceivedMessage(name) {
+        console.log("Checking for incoming messages from user ", name);
+        async.forever(
+            next => {
+                setTimeout(() => {
+                    const messageLast = {datetime: new Date(1970)};
+                    this.detectActiveContactReceivedMessage(messageLast, next);
+                }, 5000);
+            },
+            err => {
+                console.log(err)
+            }
+        );
+    }
+
+    detectActiveContactReceivedMessage(messageLast, cb) {
+        this.nightmare
+            .evaluate((messageLast) => {
+                console.log("MESSAGE LAST", messageLast);
+                const messageConverted = {
+                    datetime: new Date(messageLast.datetime)
+                };
+
+                const messagesReceived = document.querySelectorAll('.message-list > div.msg > div.message-in');
+                const messagesNew = [].filter.call(messagesReceived, message => {
+                    const getDatetime = text => {
+                        const boundLower = text.indexOf('[') + 1;
+                        const boundUpper = text.indexOf(']');
+                        const datetime = text.substring(boundLower, boundUpper);
+
+                        const hours = datetime.substring(0, datetime.indexOf(':'));
+                        const minutes = datetime.substring(datetime.indexOf(':') + 1, datetime.indexOf(','));
+
+                        const date = datetime.slice(datetime.indexOf(', ') + 2);
+                        const month = date.substring(0, date.indexOf('/'));
+                        const day = date.substring(date.indexOf('/') + 1, date.lastIndexOf('/'));
+                        const year = date.substring(date.lastIndexOf('/') + 1);
+
+                        console.log('new Date(year, month, day, hours, minutes)', year, month, day, hours, minutes);
+
+                        return new Date(year, month, day, hours, minutes)
+                    };
+
+                    const datetime = getDatetime(message.querySelector('.message-pre-text').innerHTML);
+                    console.log(`COMPARING dates ${messageConverted.datetime} < ${datetime} = ${messageConverted.datetime < datetime}`)
+                    return messageConverted.datetime < datetime
+                });
+
+                return messagesNew.length;
+
+                // What if no contact is selected?
+                // messageLast.empty => getLatestMessage
+                // messageLast == getLatestMessage => doNothing
+                // messageLast < getLatestMessage => fire event
+                // messageLast > getLatestMessage => fire ERROR
+            }, messageLast)
+            .then(result => {
+                console.log("XXXXXXX", result);
+            })
+            .catch(err => console.error("ERROR", err))
     }
 
     webhookMessageReceived(nightmare, name) {
@@ -122,3 +185,4 @@ function initNightmare(account) {
 }
 
 module.exports = new WhatsappAccount('a');
+
