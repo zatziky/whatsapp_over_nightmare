@@ -1,6 +1,6 @@
 const async = require('async');
 const R = require('ramda');
-const debug = require('debug')('wa:detector:message-received');
+    const debug = require('debug')('wa:detector:message-received');
 
 class MessageReceivedDetector {
 
@@ -21,7 +21,7 @@ class MessageReceivedDetector {
                             return next();
                         }
 
-                        this.messageLast = R.last(messages);
+                        this.messageLast = R.head(messages);
                         this.messagesNew = messages;
                         debug('New messages received', messages);
                         next();

@@ -30,39 +30,13 @@ class WhatsappAccount {
 
     }
 
-    nightmare2() {
-        const nightmare = this.nightmare;
-
-        this.selectUser(nightmare, USER_MATOUS);
-        this.sendMessageText(nightmare, 1 + ' message')
-        // .end()
-            .then(function () {
-                console.log('message was sent');
-                next()
-            })
-            .catch(err => console.log('message sent with error ', error));
-
-        // async.timesSeries(1, (index, next) => {
-        //     nightmare
-        //         .wait('.input-search')
-        //
-        //     this.selectUser(nightmare, USER_MATOUS);
-        //     this.sendMessageText(nightmare, index + ' message')
-        //     // .end()
-        //         .then(function () {
-        //             console.log('message was sent');
-        //             next()
-        //         })
-        //         .catch(err => console.log('message sent with error ', error));
-        //
-        //     // this.webhookMessageReceived(nightmare, USER_MATOUS);
-        // })
-    }
-
     selectUser(name, cb) { // TODO specify the correct name in a better way
         console.log('WhatsApp - select user', name);
 
         this.nightmare
+            .evaluate(() => {
+                document.querySelector('.input-search').value = '';
+            })
             .insert('.input-search', name)
             .wait(`.chat-title span[title="${name}"]`)
             .realClick(`.chat-title span[title="${name}"]`)
@@ -126,20 +100,17 @@ function initNightmare(account) {
     });
 
     return Nightmare({
-        // show: true,
-        show: false,
+        show: true,
+        // show: false,
         paths: {
             userData: `C:\\DEV\\whatsapp_over_nightmare\\electron_browser\\${account}`
         }
     });
 }
 
-function getNewMessages(messageLast) {
-    console.log("MESSAGE LAST", messageLast);
-    const messageConverted = {
-        datetime: new Date(messageLast.datetime)
-    };
-
+function getNewMessages(messageArg) {
+    console.log("MESSAGE LAST", messageArg);
+    const messageLast = R.assoc('datetime', new Date(messageArg.datetime), messageArg);
     const getDatetime = text => {
         const boundLower = text.indexOf('[') + 1;
         const boundUpper = text.indexOf(']');
@@ -153,35 +124,48 @@ function getNewMessages(messageLast) {
         const day = date.substring(date.indexOf('/') + 1, date.lastIndexOf('/'));
         const year = date.substring(date.lastIndexOf('/') + 1);
 
-        console.log('new Date(year, month, day, hours, minutes)', year, month, day, hours, minutes);
-
         return new Date(year, month, day, hours, minutes)
     };
+    const getPayload = text => {
+        const boundLower = text.indexOf('-->') + 3;
+        const boundUpper = text.lastIndexOf('<!--');
+        return text.substring(boundLower, boundUpper);
+    };
 
-    const elmsMessageReceived = [].filter.call(document.querySelectorAll('.message-list > div.msg > div.message-in'), message => {
+    const messagesReceived = R.reverse(document.querySelectorAll('.message-list > div.msg > div.message-in'));
+    if (R.isEmpty(messagesReceived)) {
+        console.log('getNewMessages() - No messages received.');
+        return [];
+    }
 
-
-        const datetime = getDatetime(message.querySelector('.message-pre-text').innerHTML);
-        console.log(`COMPARING dates ${messageConverted.datetime} < ${datetime} = ${messageConverted.datetime < datetime}`)
-        return messageConverted.datetime <= datetime
-    });
-    return R.map(message => {
-        const datetime = getDatetime(message.querySelector('.message-pre-text').innerHTML);
-        const getPayload = text => {
-            const boundLower = text.indexOf('-->') + 3;
-            const boundUpper = text.lastIndexOf('<!--');
-            return text.substring(boundLower, boundUpper);
-        };
-
-        const payload = getPayload(message.querySelector('.emojitext.selectable-text').innerHTML);
-        return {datetime, payload}
-    }, elmsMessageReceived);
+    return R.pipe(
+        R.findIndex(message => {
+            const datetime = getDatetime(message.querySelector('.message-pre-text').innerHTML);
+            const payload = getPayload(message.querySelector('.emojitext.selectable-text').innerHTML)
+            return R.and(
+                R.propEq('datetime', datetime, messageLast),
+                R.propEq('payload', payload, messageLast)
+            );
+        }),
+        index => {
+            console.log(index);
+            console.log('getNewMessages() - index of last message received: ', index < 0 ? 0 : index + 1);
+            return index < 0 ? messagesReceived.length : index + 1
+        },
+        R.take(R.__, messagesReceived),
+        R.map(message => {
+            const datetime = getDatetime(message.querySelector('.message-pre-text').innerHTML);
+            const payload = getPayload(message.querySelector('.emojitext.selectable-text').innerHTML);
+            return {datetime, payload}
+        })
+    )
+    (messagesReceived);
 
     // What if no contact is selected?
-    // messageLast.empty => getLatestMessage
-    // messageLast == getLatestMessage => doNothing
-    // messageLast < getLatestMessage => fire event
-    // messageLast > getLatestMessage => fire ERROR
+    // message.empty => getLatestMessage
+    // message == getLatestMessage => doNothing
+    // message < getLatestMessage => fire event
+    // message > getLatestMessage => fire ERROR
 }
 
 module.exports = new WhatsappAccount('a');
