@@ -13,6 +13,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
 
 app.use('/api/whatsapp/', routerWhatsapp);
+app.use(express.static(path.resolve(__dirname, 'public')));
 
 // app.use('/', routes);
 // app.use('/users', users);
@@ -49,7 +50,7 @@ app.use(function (err, req, res, next) {
 });
 
 app.set('port', process.env.PORT || 3000);
-this.server = app.listen(app.get('port'), (error) => {
+app.listen(app.get('port'), (error) => {
     if (!error) {
         console.log(`app running on port: ${app.get('port')}! Build something amazing!`); // eslint-disable-line
     }

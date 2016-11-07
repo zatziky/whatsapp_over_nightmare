@@ -3,6 +3,7 @@ const router = express.Router();
 const handlerWhatsapp = require('../bin/whatsapp.handler');
 const async = require('async');
 
+
 function respond(res, next, err, result) {
     if(err) return next(err);
     res.json(result)
@@ -31,12 +32,19 @@ class WhatsappController{
         ], respond.bind(null, res, next));
     }
 
+    takeScreenshot(req, res, next){
+        handlerWhatsapp.takeScreenshot((err, screenshotBuffer) => {
+            res.json('Screenshot created. Get it on http://localhost:3000/screenshot.png .')
+        });
+    }
+
 }
 
 const controller = new WhatsappController();
 
 router.get('/user/:name', controller.selectUser);
 router.post('/user/:name/message', controller.sendMessage);
+router.post('/screenshot', controller.takeScreenshot);
 
 
 

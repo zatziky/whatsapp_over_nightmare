@@ -15,7 +15,7 @@ class WhatsappAccount {
         assert(account, '"account" must be specified. It\'s value is ' + account + '.');
 
         this.nightmare = initNightmare(account);
-        this.detectorMessageReceived = new MessageReceivedDetector();
+        this.detectorMessageReceived = new MessageReceivedDetector(this.nightmare);
 
         this.nightmare
             .goto('https://web.whatsapp.com/')
@@ -24,10 +24,14 @@ class WhatsappAccount {
             .wait('.input-search')
             .then(() => {
                 console.log('then() needed to execute queued tasks');
-                this.detectorMessageReceived.run(this.detectActiveContactReceivedMessage.bind(this));
             })
 
 
+    }
+
+    takeScreenshot(cb){
+        this.nightmare.screenshot('public/screenshot.png');
+        cb();
     }
 
     selectUser(name, cb) { // TODO specify the correct name in a better way
@@ -35,7 +39,11 @@ class WhatsappAccount {
 
         this.nightmare
             .evaluate(() => {
+                // clear input value
                 document.querySelector('.input-search').value = '';
+            })
+            .then(() => {
+                this.detectorMessageReceived.stop();
             })
             .insert('.input-search', name)
             .wait(`.chat-title span[title="${name}"]`)
@@ -47,6 +55,7 @@ class WhatsappAccount {
             })
             .then((input) => {
                 cb(null, 'Selected user: ' + input);
+                this.detectorMessageReceived.run(name);
             })
             .catch(cb);
 
@@ -62,12 +71,7 @@ class WhatsappAccount {
             .catch(cb)
     }
 
-    detectActiveContactReceivedMessage(messageLast, cb) {
-        this.nightmare
-            .evaluate(getNewMessages, messageLast)
-            .then(messagesNew => cb(null, messagesNew))
-            .catch(err => console.error("ERROR", err))
-    }
+
 
     webhookMessageReceived(nightmare, name) {
         console.log("WEBHOOK", name);
@@ -106,66 +110,6 @@ function initNightmare(account) {
             userData: `C:\\DEV\\whatsapp_over_nightmare\\electron_browser\\${account}`
         }
     });
-}
-
-function getNewMessages(messageArg) {
-    console.log("MESSAGE LAST", messageArg);
-    const messageLast = R.assoc('datetime', new Date(messageArg.datetime), messageArg);
-    const getDatetime = text => {
-        const boundLower = text.indexOf('[') + 1;
-        const boundUpper = text.indexOf(']');
-        const datetime = text.substring(boundLower, boundUpper);
-
-        const hours = datetime.substring(0, datetime.indexOf(':'));
-        const minutes = datetime.substring(datetime.indexOf(':') + 1, datetime.indexOf(','));
-
-        const date = datetime.slice(datetime.indexOf(', ') + 2);
-        const month = date.substring(0, date.indexOf('/'));
-        const day = date.substring(date.indexOf('/') + 1, date.lastIndexOf('/'));
-        const year = date.substring(date.lastIndexOf('/') + 1);
-
-        return new Date(year, month, day, hours, minutes)
-    };
-    const getPayload = text => {
-        const boundLower = text.indexOf('-->') + 3;
-        const boundUpper = text.lastIndexOf('<!--');
-        return text.substring(boundLower, boundUpper);
-    };
-
-    const messagesReceived = R.reverse(document.querySelectorAll('.message-list > div.msg > div.message-in'));
-    if (R.isEmpty(messagesReceived)) {
-        console.log('getNewMessages() - No messages received.');
-        return [];
-    }
-
-    return R.pipe(
-        R.findIndex(message => {
-            const datetime = getDatetime(message.querySelector('.message-pre-text').innerHTML);
-            const payload = getPayload(message.querySelector('.emojitext.selectable-text').innerHTML)
-            return R.and(
-                R.propEq('datetime', datetime, messageLast),
-                R.propEq('payload', payload, messageLast)
-            );
-        }),
-        index => {
-            console.log(index);
-            console.log('getNewMessages() - index of last message received: ', index < 0 ? 0 : index + 1);
-            return index < 0 ? messagesReceived.length : index + 1
-        },
-        R.take(R.__, messagesReceived),
-        R.map(message => {
-            const datetime = getDatetime(message.querySelector('.message-pre-text').innerHTML);
-            const payload = getPayload(message.querySelector('.emojitext.selectable-text').innerHTML);
-            return {datetime, payload}
-        })
-    )
-    (messagesReceived);
-
-    // What if no contact is selected?
-    // message.empty => getLatestMessage
-    // message == getLatestMessage => doNothing
-    // message < getLatestMessage => fire event
-    // message > getLatestMessage => fire ERROR
 }
 
 module.exports = new WhatsappAccount('a');
