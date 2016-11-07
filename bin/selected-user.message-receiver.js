@@ -1,8 +1,8 @@
 const async = require('async');
 const R = require('ramda');
-const debug = require('debug')('wa:detector:message-received');
+const debug = require('debug')('wa:message-receiver:selected-user');
 
-class MessageReceivedDetector {
+class SelectedUserMessageReceiver {
 
     constructor(nightmare) {
         this.messagesNew = [];
@@ -121,4 +121,4 @@ function getNewMessages(messageArg) {
     // message > getLatestMessage => fire ERROR
 }
 
-module.exports = MessageReceivedDetector;
+module.exports = SelectedUserMessageReceiver;

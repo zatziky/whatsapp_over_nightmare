@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const handlerWhatsapp = require('../bin/whatsapp.handler');
+const handlerWhatsapp = require('../bin/whatsapp-account.js');
 const async = require('async');
 
 
@@ -9,6 +9,9 @@ function respond(res, next, err, result) {
     res.json(result)
 }
 
+
+// TODO message received from inactive contact - contact not in the list
+// TODO message received from inactive contact - contact in the list
 class WhatsappController{
 
     selectUser(req, res, next){
@@ -39,13 +42,18 @@ class WhatsappController{
         });
     }
 
+    getUnreadUsers(req, res, next){
+        handlerWhatsapp.getUnreadUsers(respond.bind(null, res, next));
+    }
+
 }
 
 const controller = new WhatsappController();
 
-router.get('/user/:name', controller.selectUser);
-router.post('/user/:name/message', controller.sendMessage);
-router.post('/screenshot', controller.takeScreenshot);
+router.get('/users', controller.getUnreadUsers);
+router.get('/users/:name', controller.selectUser);
+router.post('/users/:name/messages', controller.sendMessage);
+router.post('/screenshots', controller.takeScreenshot);
 
 
 

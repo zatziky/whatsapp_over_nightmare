@@ -3,11 +3,8 @@ const realMouse = require('nightmare-real-mouse');
 const async = require('async');
 const debug = require('debug')('wa:account');
 const assert = require('assert');
-const MessageReceivedDetector = require('./active-user-received-message.detector');
-const R = require('ramda');
-
-
-const USER_MATOUS = 'Matous Kucera';
+const SelectedUserMessageReceiver = require('./selected-user.message-receiver');
+const UsersMessageReceiver = require('./users.message-receiver');
 
 class WhatsappAccount {
 
@@ -15,7 +12,8 @@ class WhatsappAccount {
         assert(account, '"account" must be specified. It\'s value is ' + account + '.');
 
         this.nightmare = initNightmare(account);
-        this.detectorMessageReceived = new MessageReceivedDetector(this.nightmare);
+        this.messageReceiverSelectedUser = new SelectedUserMessageReceiver(this.nightmare);
+        this.messageReceiverUsers = new UsersMessageReceiver(this.nightmare);
 
         this.nightmare
             .goto('https://web.whatsapp.com/')
@@ -48,7 +46,7 @@ class WhatsappAccount {
                 document.querySelector('.input-search').value = '';
             })
             .then(() => {
-                this.detectorMessageReceived.stop();
+                this.messageReceiverSelectedUser.stop();
             })
             .insert('.input-search', name)
             .wait(`.chat-title span[title="${name}"]`)
@@ -60,7 +58,7 @@ class WhatsappAccount {
             })
             .then((input) => {
                 cb(null, 'Selected user: ' + input);
-                this.detectorMessageReceived.run(name);
+                this.messageReceiverSelectedUser.run(name);
             })
             .catch(cb);
 
@@ -76,6 +74,15 @@ class WhatsappAccount {
             .catch(cb)
     }
 
+    getUnreadUsers(cb){
+        return this.nightmare
+            .evaluate(() => {
+                const selector = '.pane-body.pane-list-body .chat.unread .chat-title > span';
+                return document.querySelector(selector).getAttribute('title')
+            })
+            .then(usersUnread => cb(null, usersUnread))
+            .catch(cb)
+    }
 
     webhookMessageReceived(nightmare, name) {
         console.log("WEBHOOK", name);
