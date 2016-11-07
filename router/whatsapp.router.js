@@ -33,7 +33,8 @@ class WhatsappController{
     }
 
     takeScreenshot(req, res, next){
-        handlerWhatsapp.takeScreenshot((err, screenshotBuffer) => {
+        handlerWhatsapp.takeScreenshot(err => {
+            if(err) return next(err);
             res.json('Screenshot created. Get it on http://localhost:3000/screenshot.png .')
         });
     }

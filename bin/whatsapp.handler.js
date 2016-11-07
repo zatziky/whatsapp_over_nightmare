@@ -1,7 +1,7 @@
 const Nightmare = require('nightmare');
 const realMouse = require('nightmare-real-mouse');
 const async = require('async');
-const debug = require('debug')('nightmare:actions');
+const debug = require('debug')('wa:account');
 const assert = require('assert');
 const MessageReceivedDetector = require('./active-user-received-message.detector');
 const R = require('ramda');
@@ -29,9 +29,14 @@ class WhatsappAccount {
 
     }
 
-    takeScreenshot(cb){
-        this.nightmare.screenshot('public/screenshot.png');
-        cb();
+    takeScreenshot(cb) {
+        this.nightmare
+            .screenshot('public/screenshot.png')
+            .then(() => {
+                debug('Screenshot taken');
+                cb()
+            })
+            .catch(cb)
     }
 
     selectUser(name, cb) { // TODO specify the correct name in a better way
@@ -70,7 +75,6 @@ class WhatsappAccount {
             .then(() => cb(null, `Sent Message "${message.payload}"`))
             .catch(cb)
     }
-
 
 
     webhookMessageReceived(nightmare, name) {
