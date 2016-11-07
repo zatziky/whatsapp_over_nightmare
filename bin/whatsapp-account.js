@@ -5,6 +5,7 @@ const debug = require('debug')('wa:account');
 const assert = require('assert');
 const SelectedUserMessageReceiver = require('./selected-user.message-receiver');
 const UsersMessageReceiver = require('./users.message-receiver');
+const R = require('ramda');
 
 class WhatsappAccount {
 
@@ -22,6 +23,7 @@ class WhatsappAccount {
             .wait('.input-search')
             .then(() => {
                 console.log('then() needed to execute queued tasks');
+                // this.messageReceiverUsers.run()
             })
 
 
@@ -74,30 +76,21 @@ class WhatsappAccount {
             .catch(cb)
     }
 
-    getUnreadUsers(cb){
+    getUnreadUsers(cb) {
         return this.nightmare
             .evaluate(() => {
-                const selector = '.pane-body.pane-list-body .chat.unread .chat-title > span';
-                var elmsUserUnread = document.querySelector(selector);
-                return elmsUserUnread ? elmsUserUnread.getAttribute('title') : [];
+                const selector = '.pane-body.pane-list-body .chat.unread';
+                var elmsUserUnread = document.querySelectorAll(selector);
+                if (R.isEmpty(elmsUserUnread)) return [];
+
+                return R.map(
+                    elmUser => ({user: elmUser.querySelector('.chat-title > span').getAttribute('title')}),
+                    elmsUserUnread
+                );
             })
             .then(usersUnread => cb(null, usersUnread))
             .catch(cb)
     }
-
-    webhookMessageReceived(nightmare, name) {
-        console.log("WEBHOOK", name);
-        return nightmare
-            .evaluate(() => true)
-            .then(value => {
-                console.log(document);
-                const length = document.querySelector('#main > div.pane-body.pane-chat-tile-container > div > div > div.message-list');
-                console.log('message length2: ', length);
-            })
-            .catch(err => console.log('Webhook error:', err));
-    }
-
-
 }
 
 function initNightmare(account) {
