@@ -78,7 +78,8 @@ class WhatsappAccount {
         return this.nightmare
             .evaluate(() => {
                 const selector = '.pane-body.pane-list-body .chat.unread .chat-title > span';
-                return document.querySelector(selector).getAttribute('title')
+                var elmsUserUnread = document.querySelector(selector);
+                return elmsUserUnread ? elmsUserUnread.getAttribute('title') : [];
             })
             .then(usersUnread => cb(null, usersUnread))
             .catch(cb)

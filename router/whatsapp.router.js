@@ -2,10 +2,17 @@ const express = require('express');
 const router = express.Router();
 const handlerWhatsapp = require('../bin/whatsapp-account.js');
 const async = require('async');
+const debug = require('debug')('wa:controller');
+const error = require('debug')('wa:controller:error');
 
 
 function respond(res, next, err, result) {
-    if(err) return next(err);
+    if(err) {
+        error(err);
+        return next(err);
+    }
+
+    debug('Result: ', result);
     res.json(result)
 }
 
@@ -43,6 +50,7 @@ class WhatsappController{
     }
 
     getUnreadUsers(req, res, next){
+        debug('getUnreadUsers()');
         handlerWhatsapp.getUnreadUsers(respond.bind(null, res, next));
     }
 
