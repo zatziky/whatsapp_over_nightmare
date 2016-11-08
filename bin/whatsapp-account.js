@@ -23,7 +23,7 @@ class WhatsappAccount {
             .wait('.input-search')
             .then(() => {
                 console.log('then() needed to execute queued tasks');
-                // this.messageReceiverUsers.run()
+                this.messageReceiverUsers.run()
             })
 
 
@@ -77,19 +77,7 @@ class WhatsappAccount {
     }
 
     getUnreadUsers(cb) {
-        return this.nightmare
-            .evaluate(() => {
-                const selector = '.pane-body.pane-list-body .chat.unread';
-                var elmsUserUnread = document.querySelectorAll(selector);
-                if (R.isEmpty(elmsUserUnread)) return [];
-
-                return R.map(
-                    elmUser => ({user: elmUser.querySelector('.chat-title > span').getAttribute('title')}),
-                    elmsUserUnread
-                );
-            })
-            .then(usersUnread => cb(null, usersUnread))
-            .catch(cb)
+        return this.messageReceiverUsers.detectUnreadUsers(cb);
     }
 }
 
