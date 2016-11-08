@@ -6,6 +6,8 @@ const assert = require('assert');
 const SelectedUserMessageReceiver = require('./selected-user.message-receiver');
 const UsersMessageReceiver = require('./users.message-receiver');
 const R = require('ramda');
+const fs = require('fs-extra');
+
 
 class WhatsappAccount {
 
@@ -31,10 +33,11 @@ class WhatsappAccount {
     }
 
     takeScreenshot(cb) {
+        fs.mkdirsSync(`public/${this.phoneNumber}`)
         this.nightmare
-            .screenshot('public/screenshot.png')
+            .screenshot(`public/${this.phoneNumber}/screenshot.png`)
             .then(() => {
-                debug('Screenshot taken');
+                debug(`Screenshot taken to public/${this.phoneNumber}/screenshot.png`);
                 cb()
             })
             .catch(cb)

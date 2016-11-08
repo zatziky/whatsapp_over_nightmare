@@ -15,7 +15,7 @@ class AccountsService {
         }
 
         this.accounts = R.append(new WhatsappAccount(phoneNumber), this.accounts);
-        cb(`Started WhatsApp account for phone number ${phoneNumber}`);
+        cb(null, `Started WhatsApp account for phone number ${phoneNumber}`);
     }
 
     getAccount(phoneNumber, cb){
