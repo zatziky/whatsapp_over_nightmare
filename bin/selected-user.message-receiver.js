@@ -20,13 +20,13 @@ class SelectedUserMessageReceiver {
 
                     detectActiveContactReceivedMessage(this.nightmare, this.messageLast, (err, messages) => {
                         if (R.equals(this.messagesNew, messages) || R.isEmpty(messages)) {
-                            debug(`No new messages`, messages);
                             return next();
                         }
 
+                        debug('New messages received', messages);
                         this.messageLast = R.head(messages);
                         this.messagesNew = messages;
-                        debug('New messages received', messages);
+                        // TODO send messages to a webhook
                         next();
                     });
                 }, 5000);

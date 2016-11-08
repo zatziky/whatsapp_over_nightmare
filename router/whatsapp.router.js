@@ -16,9 +16,6 @@ function respond(res, next, err, result) {
     res.json(result)
 }
 
-
-// TODO message received from inactive contact - contact not in the list
-// TODO message received from inactive contact - contact in the list
 class WhatsappController{
 
     selectUser(req, res, next){
