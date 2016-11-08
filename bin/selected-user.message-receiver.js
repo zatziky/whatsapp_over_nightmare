@@ -10,9 +10,9 @@ class SelectedUserMessageReceiver {
         this.canRun = false;
         this.nightmare = nightmare;
 
+        debug("Checking for incoming messages every 5 sec.");
         async.forever(
             next => {
-                debug("Checking for incoming messages in 5 sec.");
                 setTimeout(() => {
                     if (!this.canRun) {
                         return next();
@@ -94,7 +94,7 @@ function getNewMessages(messageArg) {
     return R.pipe(
         R.findIndex(message => {
             const datetime = getDatetime(message.querySelector('.message-pre-text').innerHTML);
-            const payload = getPayload(message.querySelector('.emojitext.selectable-text').innerHTML)
+            const payload = getPayload(message.querySelector('.emojitext.selectable-text').innerHTML);
             return R.and(
                 R.propEq('datetime', datetime, messageLast),
                 R.propEq('payload', payload, messageLast)

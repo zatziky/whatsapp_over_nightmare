@@ -9,10 +9,11 @@ const R = require('ramda');
 
 class WhatsappAccount {
 
-    constructor(account) {
-        assert(account, '"account" must be specified. It\'s value is ' + account + '.');
+    constructor(phoneNumber) {
+        assert(phoneNumber, '"phoneNumber" must be specified. It\'s value is ' + phoneNumber + '.');
+        this.phoneNumber = phoneNumber;
 
-        this.nightmare = initNightmare(account);
+        this.nightmare = initNightmare(phoneNumber);
         this.messageReceiverSelectedUser = new SelectedUserMessageReceiver(this.nightmare);
         this.messageReceiverUsers = new UsersMessageReceiver(this.nightmare);
 
@@ -81,7 +82,7 @@ class WhatsappAccount {
     }
 }
 
-function initNightmare(account) {
+function initNightmare(phoneNumber) {
     realMouse(Nightmare);
 
     Nightmare.action('evaluateSpa', function (selector, done) {
@@ -100,10 +101,10 @@ function initNightmare(account) {
         show: true,
         // show: false,
         paths: {
-            userData: `C:\\DEV\\whatsapp_over_nightmare\\electron_browser\\${account}`
+            userData: `C:\\DEV\\whatsapp_over_nightmare\\electron_browser\\${phoneNumber}`
         }
     });
 }
 
-module.exports = new WhatsappAccount('a');
+module.exports = WhatsappAccount;
 
