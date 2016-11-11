@@ -33,7 +33,7 @@ class WhatsappAccount {
     }
 
     takeScreenshot(cb) {
-        fs.mkdirsSync(`public/${this.phoneNumber}`)
+        fs.mkdirsSync(`public/${this.phoneNumber}`);
         this.nightmare
             .screenshot(`public/${this.phoneNumber}/screenshot.png`)
             .then(() => {
@@ -46,43 +46,91 @@ class WhatsappAccount {
     selectUser(name, cb) { // TODO specify the correct name in a better way
         console.log('WhatsApp - select user', name);
 
-        this.nightmare
-            .evaluate(() => {
-                // clear input value
-                document.querySelector('.input-search').value = '';
-            })
-            .then(() => {
-                this.messageReceiverSelectedUser.stop();
-            })
-            .insert('.input-search', name)
-            .wait(`.chat-title span[title="${name}"]`)
-            .realClick(`.chat-title span[title="${name}"]`)
-            .wait(500)
-            .evaluate(() => {
-                console.log('value', $('.input-search').val());
-                return $('.input-search').val()
-            })
-            .then((input) => {
-                cb(null, 'Selected user: ' + input);
-                this.messageReceiverSelectedUser.run(name);
-            })
-            .catch(cb);
+        const clearSearchBox = (next) => {
+            this.nightmare
+                .evaluate(() => {
+                    // clear input value
+                    document.querySelector('.input-search').value = '';
+                })
+                .then(() => {
+                    this.messageReceiverSelectedUser.stop();
+                    next();
+                })
+                .catch(next);
+        };
 
+        const selectUser = next => {
+            this.nightmare
+                .insert('.input-search', name)
+                .wait(`.chat-title span[title="${name}"]`)
+                .realClick(`.chat-title span[title="${name}"]`)
+                .wait(500)
+                .evaluate(() => {
+                    console.log('value', $('.input-search').val());
+                    return $('.input-search').val();
+                })
+                .then((input) => {
+                    this.messageReceiverSelectedUser.run(name);
+                    next(null, 'Selected user: ' + input);
+                })
+                .catch(next);
+        };
+
+        async.series([
+            clearSearchBox,
+            selectUser
+        ], cb);
     }
 
-    sendMessageText(message, cb) {
-        console.log('WhatsApp - sendMessage', message);
-        const selectorSendButton = '#main button.icon-send.send-container';
-        return this.nightmare
-            .insert('div.input-container', message.payload)
-            .realClick(selectorSendButton)
-            .then(() => cb(null, `Sent Message "${message.payload}"`))
-            .catch(cb)
+    sendMessage(message, cb){
+        switch (message.type) {
+            case 'text':
+                debug('Send as TEXT');
+                return sendText(this.nightmare, message);
+            case 'file':
+                debug('Send as FILE');
+                return sendFile(this.nightmare, message);
+        }
+
     }
 
     getUnreadUsers(cb) {
         return this.messageReceiverUsers.detectUnreadUsers(cb);
     }
+}
+
+
+function sendFile(nightmare, message, cb){
+    const clickAddAttachment = (next) => {
+        debug('Click Button "Add Attachment"');
+        nightmare
+            .realClick('button.icon.icon-clip')
+            .then(() => next())
+            .catch(next);
+    };
+
+    const clickFile = next => {
+        debug('Click Button "Select Attachment - File"');
+        nightmare
+            .realClick('.menu-item.active .icon-xl.icon-document')
+            .then(() => next())
+            .catch(next);
+    };
+
+    async.series([
+        clickAddAttachment,
+        clickFile
+    ], cb);
+}
+
+function sendText(nightmare, message, cb) {
+    console.log('WhatsApp - sendMessage', message);
+    const selectorSendButton = '#main button.icon-send.send-container';
+    return nightmare
+        .insert('div.input-container', message.payload)
+        .realClick(selectorSendButton)
+        .then(() => cb(null, `Sent Message "${message.payload}"`))
+        .catch(cb)
 }
 
 function initNightmare(phoneNumber) {

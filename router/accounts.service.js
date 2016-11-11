@@ -2,6 +2,8 @@ const R = require('ramda');
 const debug = require('debug')('wa:AccountsService');
 const WhatsappAccount = require('../bin/whatsapp-account.js');
 
+
+// TODO remove account if shut down
 class AccountsService {
 
     constructor(){

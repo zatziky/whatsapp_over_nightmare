@@ -28,7 +28,7 @@ class WhatsappController {
 
         async.series([
             cb => req.account.selectUser(name, cb),
-            cb => req.account.sendMessageText(message, cb)
+            cb => req.account.sendMessage(message, cb)
         ], respond.bind(null, res, next));
     }
 
